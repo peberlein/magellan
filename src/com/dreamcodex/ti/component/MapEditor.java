@@ -169,6 +169,8 @@ public class MapEditor extends JPanel implements ItemListener, ActionListener, K
 
         jsclCanvas = new JScrollPane(mapCanvas);
         jsclCanvas.setBorder(BorderFactory.createLineBorder(new Color(64, 64, 64), 1));
+        jsclCanvas.getVerticalScrollBar().setUnitIncrement(8);
+        jsclCanvas.getHorizontalScrollBar().setUnitIncrement(8);
 
         this.add(jsclCanvas, BorderLayout.CENTER);
         this.add(jpnlToolsContainer, BorderLayout.NORTH);

@@ -515,6 +515,8 @@ public class MagellanUI {
         // Create Character Dock
         characterDockPanel = buildCharacterDock(null);
         JScrollPane jsclCharacterDock = new JScrollPane(characterDockPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        jsclCharacterDock.getVerticalScrollBar().setUnitIncrement(8);
+        jsclCharacterDock.getHorizontalScrollBar().setUnitIncrement(8);
 
         // Assemble Character Editor Panel
         JPanel jpnlCharEdit = getPanel(new GridBagLayout());
@@ -605,6 +607,8 @@ public class MagellanUI {
         // Create Sprite Dock
         spriteDockPanel = buildSpriteDock(null);
         JScrollPane jsclSpriteDock = new JScrollPane(spriteDockPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        jsclSpriteDock.getVerticalScrollBar().setUnitIncrement(8);
+        jsclSpriteDock.getHorizontalScrollBar().setUnitIncrement(8);
 
         // Assemble Sprite Editor Panel
         JPanel jpnlSpriteEdit = getPanel(new GridBagLayout());
