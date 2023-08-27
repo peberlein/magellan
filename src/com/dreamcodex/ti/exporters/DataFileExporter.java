@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.dreamcodex.ti.Magellan.*;
-import static com.dreamcodex.ti.Magellan.COLOR_MODE_BITMAP;
+import static com.dreamcodex.ti.util.ColorMode.*;
 
 public class DataFileExporter extends Exporter {
 
@@ -35,7 +35,7 @@ public class DataFileExporter extends Exporter {
         // Color mode
         bw.write("* COLOR MODE");
         bw.newLine();
-        bw.write(Globals.KEY_COLOR_MODE + colorMode);
+        bw.write(Globals.KEY_COLOR_MODE + colorMode.ordinal());
         bw.newLine();
         // output overall character range (this is for backwards compatibility with earlier Magellan releases, will be phased out)
         bw.write("* CHARACTER RANGE");
@@ -166,6 +166,8 @@ public class DataFileExporter extends Exporter {
                 bw.newLine();
             }
             bw.write("* SPRITE LOCATIONS");
+            bw.newLine();
+            bw.write(Globals.KEY_SPRITE_LOCATION_PIXELS + "1");
             bw.newLine();
             HashMap<Point, ArrayList<Integer>> spriteMap = mapEditor.getSpriteMap(m);
             for (Point p : spriteMap.keySet()) {

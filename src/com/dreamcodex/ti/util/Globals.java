@@ -1,15 +1,11 @@
 package com.dreamcodex.ti.util;
 
-import com.dreamcodex.ti.Magellan;
-
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.List;
 import java.awt.image.ImageFilter;
 import java.awt.image.RGBImageFilter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Globals {
     public static final String CMD_NEW = "new";
@@ -115,6 +111,7 @@ public class Globals {
     public static final String CMD_VIEW_CHAR_LAYER = "viewchars";
     public static final String CMD_VIEW_SPRITE_LAYER = "viewsprites";
     public static final String CMD_MAGNIFY_SPRITES = "magnifysprites";
+    public static final String CMD_SNAP_SPRITES_TO_GRID = "snapspritestogrid";
 
     public static final String KEY_SCRBACK = "SB:"; // phasing out
     public static final String KEY_COLOR_MODE = "CM:";
@@ -137,6 +134,7 @@ public class Globals {
     public static final String KEY_SPRITE_PATTERN2 = "S2:";
     public static final String KEY_SPRITE_COLOR = "SC:";
     public static final String KEY_SPRITE_LOCATION = "SL:";
+    public static final String KEY_SPRITE_LOCATION_PIXELS = "SX:";
     public static final String KEY_MAPEND = "M-";
 
     public static final Color CLR_COMPONENTBACK = new Color(255, 255, 255);
@@ -550,6 +548,17 @@ public class Globals {
         return true;
     }
 
+    public static boolean isByteGrid(int[][] grid) {
+        for (int[] row : grid) {
+            for (int i : row) {
+                if (i > 255) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public static double gridColorDistance(int[][] grid1, int[][] grid2) {
         double dist = 0;
         for (int y = 0; y < grid1.length; y++) {
@@ -638,7 +647,7 @@ public class Globals {
 
     public static ImageFilter ifTrans = new RGBImageFilter() {
 
-        private int tagTrans = TIGlobals.TI_COLOR_TRANSOPAQUE.getRGB();
+        private final int tagTrans = TIGlobals.TI_COLOR_TRANSOPAQUE.getRGB();
 
         public final int filterRGB(int x, int y, int rgb) {
             if (rgb == tagTrans) {

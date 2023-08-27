@@ -1,11 +1,7 @@
 package com.dreamcodex.ti.component;
 
-import com.dreamcodex.ti.Magellan;
 import com.dreamcodex.ti.iface.MapChangeListener;
-import com.dreamcodex.ti.util.Globals;
-import com.dreamcodex.ti.util.Lists;
-import com.dreamcodex.ti.util.TransChar;
-import com.dreamcodex.ti.util.TransitionType;
+import com.dreamcodex.ti.util.*;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -18,12 +14,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-/**
- * Created with IntelliJ IDEA.
- * User: Rasmus
- * Date: 06-05-13
- * Time: 20:43
- */
+import static com.dreamcodex.ti.util.ColorMode.COLOR_MODE_BITMAP;
+import static com.dreamcodex.ti.util.ColorMode.COLOR_MODE_GRAPHICS_1;
+import static java.lang.Math.floorMod;
+
 public class AnalyzeCharTransDialog extends JDialog implements ActionListener, MapChangeListener, WindowListener, ListSelectionListener {
 
     private final MapEditor mapEditor;
@@ -31,13 +25,11 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
     private final HashMap<Integer, int[][]> charGrids;
     private final HashMap<Integer, int[][]> charColors;
     private final int[][] clrSets;
-    private final int colorMode;
+    private final ColorMode colorMode;
     private final int screenColor;
-    private static TransitionType transitionType = TransitionType.BOTTOM_TO_TOP;
+    private static TransitionType transitionType = TransitionType.TOP_TO_BOTTOM;
     private static boolean wrap = false;
-    private final JRadioButton verticalButton;
-    private final JRadioButton horizontalButton;
-    private final JRadioButton twoDimensionalButton;
+    private final JComboBox transitionTypeComboBox;
     private final JCheckBox wrapCheckbox;
     private final JTable jTable;
     private final CharTransTableModel tableModel;
@@ -67,20 +59,18 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
             int width = mapData[0].length;
             if (width > 1 && height > 1) {
                 switch (transitionType) {
+                    case TOP_TO_BOTTOM:
                     case BOTTOM_TO_TOP:
-                        for (int y = wrap ? 0 : 1; y < height; y++) {
-                            for (int x = 0; x < width; x++) {
-                                int fromChar = mapData[y][x];
-                                int toChar = mapData[y > 0 ? y - 1 : height - 1][x];
-                                addTransCharToMap(new TransChar(fromChar, toChar));
-                            }
-                        }
-                        break;
                     case LEFT_TO_RIGHT:
-                        for (int y = 0; y < height; y++) {
-                            for (int x = 0; x < width - (wrap ? 0 : 1); x++) {
+                    case RIGHT_TO_LEFT:
+                        int yStart = transitionType.getyOffset() < 0 && !wrap ? 1 : 0;
+                        int yEnd = height - (transitionType.getyOffset() > 0 && !wrap ? 1 : 0);
+                        int xStart = transitionType.getxOffset() < 0 && !wrap ? 1 : 0;
+                        int xEnd = width - (transitionType.getxOffset() > 0 && !wrap ? 1 : 0);
+                        for (int y = yStart; y < yEnd; y++) {
+                            for (int x = xStart; x < xEnd; x++) {
                                 int fromChar = mapData[y][x];
-                                int toChar = mapData[y][x < width - 1 ? x + 1 : 0];
+                                int toChar = mapData[floorMod(y + transitionType.getyOffset(), height)][floorMod(x + transitionType.getxOffset(), width)];
                                 addTransCharToMap(new TransChar(fromChar, toChar));
                             }
                         }
@@ -119,7 +109,7 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
 
         private boolean areColorsOK(TransChar transChar) {
             boolean colorsOK;
-            if (colorMode == Magellan.COLOR_MODE_GRAPHICS_1 ) {
+            if (colorMode == COLOR_MODE_GRAPHICS_1 ) {
                 int[] fromClrSet = clrSets[transChar.getFromChar() / 8];
                 int[] toClrSet = clrSets[transChar.getToChar() / 8];
                 colorsOK = Globals.isColorTransitionOK(
@@ -132,8 +122,8 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
                         charGrids.get(transChar.getToChar())
                 );
             }
-            else if (colorMode == Magellan.COLOR_MODE_BITMAP) {
-                if (transitionType == TransitionType.BOTTOM_TO_TOP) {
+            else if (colorMode == COLOR_MODE_BITMAP) {
+                if (transitionType == TransitionType.TOP_TO_BOTTOM ||transitionType == TransitionType.BOTTOM_TO_TOP) {
                     colorsOK = true;
                 }
                 else {
@@ -249,11 +239,17 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
             TransChar transChar = (TransChar) value;
             if (from) {
                 setText(Integer.toString(transChar.getFromChar()));
-                setIcon(new ImageIcon(charImages.get(transChar.getFromChar())));
+                Image image = charImages.get(transChar.getFromChar());
+                if (image != null) {
+                    setIcon(new ImageIcon(image));
+                }
             }
             else {
                 setText(Lists.commaSeparatedList(transChar.getToChars()));
-                setIcon(new ImageIcon(charImages.get(transChar.getToChar())));
+                Image image = charImages.get(transChar.getToChar());
+                if (image != null) {
+                    setIcon(new ImageIcon(image));
+                }
             }
             return this;
         }
@@ -266,7 +262,7 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
         HashMap<Integer, int[][]> charGrids,
         HashMap<Integer, int[][]> charColors,
         int[][] clrSets,
-        int colorMode
+        ColorMode colorMode
     ) {
         super(parent, "Analyze Character Transitions");
         this.mapEditor = mapEditor;
@@ -277,19 +273,10 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
         this.colorMode = colorMode;
         screenColor = mapEditor.getColorScreen();
         setLayout(new BorderLayout());
-        verticalButton = new JRadioButton("From Bottom to Top", transitionType == TransitionType.BOTTOM_TO_TOP);
-        horizontalButton = new JRadioButton("From Left to Right", transitionType == TransitionType.LEFT_TO_RIGHT);
-        twoDimensionalButton = new JRadioButton("2-dimensional", transitionType == TransitionType.TWO_DIMENSIONAL);
-        ButtonGroup radioButtonGroup = new ButtonGroup();
-        radioButtonGroup.add(verticalButton);
-        radioButtonGroup.add(horizontalButton);
-        JPanel radioButtonPanel = new JPanel();
-        radioButtonPanel.add(verticalButton);
-        radioButtonPanel.add(horizontalButton);
-        radioButtonPanel.add(twoDimensionalButton);
+        transitionTypeComboBox = new JComboBox(TransitionType.values());
         wrapCheckbox = new JCheckBox("Wrap Edges", wrap);
-        JPanel optionsPanel = new JPanel();
-        optionsPanel.add(radioButtonPanel);
+        JPanel optionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        optionsPanel.add(transitionTypeComboBox);
         optionsPanel.add(wrapCheckbox);
         add(optionsPanel, BorderLayout.NORTH);
         jTable = new JTable();
@@ -320,9 +307,7 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
         setSize(400, 500);
         setVisible(true);
         addWindowListener(this);
-        verticalButton.addActionListener(this);
-        horizontalButton.addActionListener(this);
-        twoDimensionalButton.addActionListener(this);
+        transitionTypeComboBox.addActionListener(this);
         wrapCheckbox.addActionListener(this);
         refreshButton.addActionListener(this);
         closeButton.addActionListener(this);
@@ -334,16 +319,8 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == verticalButton) {
-            transitionType = TransitionType.BOTTOM_TO_TOP;
-            tableModel.refresh();
-        }
-        else if (e.getSource() == horizontalButton) {
-            transitionType = TransitionType.LEFT_TO_RIGHT;
-            tableModel.refresh();
-        }
-        else if (e.getSource() == twoDimensionalButton) {
-            transitionType = TransitionType.TWO_DIMENSIONAL;
+        if (e.getSource() == transitionTypeComboBox) {
+            transitionType = (TransitionType) transitionTypeComboBox.getSelectedItem();
             tableModel.refresh();
         }
         else if (e.getSource() == wrapCheckbox) {
@@ -369,26 +346,23 @@ public class AnalyzeCharTransDialog extends JDialog implements ActionListener, M
             int width = mapData[0].length;
             if (height > 1 && width > 1) {
                 switch (transitionType) {
+                    case TOP_TO_BOTTOM:
                     case BOTTOM_TO_TOP:
-                        for (int y = 1; y < height; y++) {
-                            for (int x = 0; x < width; x++) {
-                                int fromChar = mapData[y][x];
-                                int toChar = mapData[y - 1][x];
-                                if (fromChar == transChar.getFromChar() && toChar == transChar.getToChar()) {
-                                    mapEditor.highlightCell(x, y);
-                                    mapEditor.highlightCell(x, y - 1);
-                                }
-                            }
-                        }
-                        break;
                     case LEFT_TO_RIGHT:
-                        for (int y = 0; y < height; y++) {
-                            for (int x = 0; x < width - 1; x++) {
+                    case RIGHT_TO_LEFT:
+                        int yStart = transitionType.getyOffset() < 0 && !wrap ? 1 : 0;
+                        int yEnd = height - (transitionType.getyOffset() > 0 && !wrap ? 1 : 0);
+                        int xStart = transitionType.getxOffset() < 0 && !wrap ? 1 : 0;
+                        int xEnd = width - (transitionType.getxOffset() > 0 && !wrap ? 1 : 0);
+                        for (int y = yStart; y < yEnd; y++) {
+                            for (int x = xStart; x < xEnd; x++) {
                                 int fromChar = mapData[y][x];
-                                int toChar = mapData[y][x + 1];
+                                int toY = floorMod(y + transitionType.getyOffset(), height);
+                                int toX = floorMod(x + transitionType.getxOffset(), width);
+                                int toChar = mapData[toY][toX];
                                 if (fromChar == transChar.getFromChar() && toChar == transChar.getToChar()) {
                                     mapEditor.highlightCell(x, y);
-                                    mapEditor.highlightCell(x + 1, y);
+                                    mapEditor.highlightCell(toX, toY);
                                 }
                             }
                         }

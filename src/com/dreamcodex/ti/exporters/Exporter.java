@@ -1,10 +1,7 @@
 package com.dreamcodex.ti.exporters;
 
 import com.dreamcodex.ti.component.MapEditor;
-import com.dreamcodex.ti.util.DataSet;
-import com.dreamcodex.ti.util.ECMPalette;
-import com.dreamcodex.ti.util.Globals;
-import com.dreamcodex.ti.util.Preferences;
+import com.dreamcodex.ti.util.*;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -36,7 +33,7 @@ public abstract class Exporter {
     protected HashMap<Integer, int[][]> spriteGrids;
     protected int[] spriteColors;
     protected ECMPalette[] ecmSpritePalettes;
-    protected int colorMode;
+    protected ColorMode colorMode;
 
     public Exporter() {
     }
@@ -67,7 +64,7 @@ public abstract class Exporter {
         HashMap<Integer, int[][]> spriteGrids,
         int[] spriteColors,
         ECMPalette[] ecmSpritePalettes,
-        int colorMode
+        ColorMode colorMode
     ) {
         this.mapEditor = mapEditor;
         this.clrSets = clrSets;
@@ -127,5 +124,13 @@ public abstract class Exporter {
             i = 0;
         }
         return i;
+    }
+
+    protected String rightPad(int n, int width) {
+        StringBuilder sb = new StringBuilder(Integer.toString(n));
+        while (sb.length() < width) {
+            sb.append(" ");
+        }
+        return sb.toString();
     }
 }

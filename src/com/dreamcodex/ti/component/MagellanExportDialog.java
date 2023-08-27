@@ -1,23 +1,26 @@
 package com.dreamcodex.ti.component;
 
-import com.dreamcodex.ti.Magellan;
 import com.dreamcodex.ti.iface.IconProvider;
 import com.dreamcodex.ti.util.NamedIcon;
 import com.dreamcodex.ti.util.Preferences;
 import com.dreamcodex.ti.util.TIGlobals;
+import com.dreamcodex.ti.util.TransitionType;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MagellanExportDialog extends JDialog implements PropertyChangeListener, ActionListener {
-    public static int TYPE_BASIC = 0;
-    public static int TYPE_ASM = 1;
-    public static int TYPE_BINARY = 2;
-    public static int TYPE_XBSCRMER = 3;
-    public static int TYPE_SCROLL = 4;
+
+    public static final int TYPE_BASIC = 0;
+    public static final int TYPE_ASM = 1;
+    public static final int TYPE_BINARY = 2;
+    public static final int TYPE_XBSCRMER = 3;
+    public static final int TYPE_SCROLL = 4;
 
     public static int COMPRESSION_NONE = 0;
     public static int COMPRESSION_RLE_BYTE = 1;
@@ -37,16 +40,15 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
     private JTextField jtxtCharLineStart;
     private JTextField jtxtMapLineStart;
     private JTextField jtxtLineInterval;
-    private JCheckBox jchkIncludeColorsets;
-    private JCheckBox jchkIncludeChardata;
-    private JCheckBox jchkIncludeSpritedata;
+    private JCheckBox jchkIncludeColorData;
+    private JCheckBox jchkIncludeMapData;
+    private JCheckBox jchkIncludeCharData;
+    private JCheckBox jchkIncludeSpriteData;
     private JCheckBox jchkIncludeComments;
     private JCheckBox jchkIncludeCharNumbers;
     private JCheckBox jchkCurrentMapOnly;
     private JCheckBox jchkExcludeBlank;
-    private JPanel orientationRadioButtonPanel;
-    private JRadioButton verticalButton;
-    private JRadioButton horizontalButton;
+    private JComboBox transitionTypeComboBox;
     private JCheckBox jchkWrap;
     private JComboBox frameComboBox;
     private JComboBox compressComboBox;
@@ -71,18 +73,21 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
                 preferences.isExcludeBlank(),
                 preferences.isIncludeCharNumbers(),
                 preferences.isWrap(),
+                preferences.isIncludeMapData(),
+                preferences.isIncludeCharData(),
                 preferences.isIncludeSpriteData(),
+                preferences.isIncludeColorData(),
                 preferences.getCompression(),
-                preferences.getScrollOrientation(),
+                preferences.getTransitionType(),
                 preferences.getScrollFrames()
         );
     }
 
     public MagellanExportDialog(int type, JFrame parent, IconProvider ip, boolean setCommentsOn, int startChar, int endChar, int minc, int maxc, int maxSprite, boolean currentMapOnly, boolean excludeBlank) {
-        this(type, parent, ip, setCommentsOn, startChar, endChar, minc, maxc, TIGlobals.MIN_SPRITE, maxSprite, maxSprite, currentMapOnly, excludeBlank, false, false, false, 0, 0, -1);
+        this(type, parent, ip, setCommentsOn, startChar, endChar, minc, maxc, TIGlobals.MIN_SPRITE, maxSprite, maxSprite, currentMapOnly, excludeBlank, false, false, true, true, false, true, 0, TransitionType.BOTTOM_TO_TOP, -1);
     }
 
-    public MagellanExportDialog(int type, JFrame parent, IconProvider ip, boolean setCommentsOn, int startChar, int endChar, int minc, int maxc, int startSprite, int endsprite, int maxSprite, boolean currentMapOnly, boolean excludeBlank, boolean includeCharNumbers, boolean wrap, boolean includeSpriteData, int compression, int scrollOrientation, int scrollFrames) {
+    public MagellanExportDialog(int type, JFrame parent, IconProvider ip, boolean setCommentsOn, int startChar, int endChar, int minc, int maxc, int startSprite, int endsprite, int maxSprite, boolean currentMapOnly, boolean excludeBlank, boolean includeCharNumbers, boolean wrap, boolean includeMapData, boolean includeCharData, boolean includeSpriteData, boolean includeColorData, int compression, TransitionType transitionType, int scrollFrames) {
         super(parent, "Export Settings", true);
         minChar = minc;
         maxChar = maxc;
@@ -96,47 +101,48 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
         }
         jtxtMapLineStart = new JTextField("900");
         jtxtLineInterval = new JTextField("10");
-        jchkIncludeColorsets = new JCheckBox("Include Colorsets", true);
-        jchkIncludeChardata = new JCheckBox("Include Character Data", true);
-        jchkIncludeSpritedata = new JCheckBox("Include Sprite Data", includeSpriteData);
-        jchkIncludeSpritedata.addActionListener(this);
+
+        jchkIncludeColorData = new JCheckBox("Include Color Sets", includeColorData);
+
+        jchkIncludeMapData = new JCheckBox("Include Map Data", includeMapData);
+        jchkIncludeMapData.addActionListener(this);
+
+        jchkIncludeCharData = new JCheckBox("Include Character Data", includeCharData);
+        jchkIncludeCharData.addActionListener(this);
+
+        jchkIncludeSpriteData = new JCheckBox("Include Sprite Data", includeSpriteData);
+        jchkIncludeSpriteData.addActionListener(this);
+
         jchkIncludeComments = new JCheckBox("Include Comments", setCommentsOn);
+
         jchkIncludeCharNumbers = new JCheckBox("Include Character Numbers", includeCharNumbers);
+        jchkIncludeCharNumbers.setEnabled(includeCharData);
+
         jchkCurrentMapOnly = new JCheckBox("Current Map Only", currentMapOnly);
+        jchkCurrentMapOnly.setEnabled(includeMapData);
+
         jchkExcludeBlank = new JCheckBox("Exclude Blank Characters", excludeBlank);
 
-        verticalButton = new JRadioButton("Bottom to Top", true);
-        verticalButton.addActionListener(this);
-        horizontalButton = new JRadioButton("Left to Right");
-        horizontalButton.addActionListener(this);
-        ButtonGroup radioButtonGroup = new ButtonGroup();
-        radioButtonGroup.add(verticalButton);
-        radioButtonGroup.add(horizontalButton);
-        orientationRadioButtonPanel = new JPanel();
-        orientationRadioButtonPanel.add(verticalButton);
-        if (scrollOrientation == Magellan.SCROLL_ORIENTATION_VERTICAL) {
-            verticalButton.setSelected(true);
-        }
-        orientationRadioButtonPanel.add(horizontalButton);
-        if (scrollOrientation == Magellan.SCROLL_ORIENTATION_HORIZONTAL) {
-            horizontalButton.setSelected(true);
-        }
+        transitionTypeComboBox = new JComboBox(TransitionType.values());
+        transitionTypeComboBox.setSelectedItem(transitionType);
+        transitionTypeComboBox.addActionListener(this);
 
         jchkWrap = new JCheckBox("Wrap Edges", wrap);
+
         compressComboBox = new JComboBox(new String[] {"No compression", "RLE Compress Maps (bytes)", "RLE Compress Maps (words)", "2x2 Meta tiles", "4x4 Meta tiles", "Pack in nybbles (16 characters max)"});
         compressComboBox.setSelectedIndex(Math.min(compression, compressComboBox.getItemCount() - 1));
+        compressComboBox.setEnabled(includeMapData);
+
         frameComboBox = new JComboBox(new String[] {"0", "2", "4", "8"});
-        if (scrollOrientation == Magellan.SCROLL_ORIENTATION_VERTICAL) {
+        if (transitionType == TransitionType.BOTTOM_TO_TOP) {
             frameComboBox.addItem("2-character Strips");
         }
-
         frameComboBox.setSelectedIndex(Math.max(Math.min(scrollFrames != -1 ? (int) Math.floor(Math.log(scrollFrames) / Math.log(2)) : 4, frameComboBox.getItemCount() - 1), 0));
 
         jcmbStartChar = new JComboBox();
         jcmbStartChar.setRenderer(new CharListCellRenderer());
         jcmbEndChar = new JComboBox();
         jcmbEndChar.setRenderer(new CharListCellRenderer());
-
         for (int i = minChar; i <= maxChar; i++) {
             Icon icon = ip.getIconForChar(i);
             int chardex = i - TIGlobals.CHARMAPSTART;
@@ -146,6 +152,8 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
         }
         jcmbStartChar.setSelectedIndex(Math.min(Math.max(startChar - minChar, 0), jcmbStartChar.getItemCount() - 1));
         jcmbEndChar.setSelectedIndex(Math.max(Math.min(endChar - minChar, jcmbEndChar.getItemCount() - 1), 0));
+        jcmbStartChar.setEnabled(includeCharData);
+        jcmbEndChar.setEnabled(includeCharData);
 
         jcmbStartSprite = new JComboBox();
         jcmbStartSprite.setRenderer(new CharListCellRenderer());
@@ -162,68 +170,81 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
         jcmbStartSprite.setEnabled(includeSpriteData);
         jcmbEndSprite.setEnabled(includeSpriteData);
 
-        Object[] objForm = new Object[15];
-        int objCount = 0;
-        if (type != TYPE_XBSCRMER && type != TYPE_SCROLL) {
-            objForm[objCount++] = new JLabel("From Char #");
-            objForm[objCount++] = jcmbStartChar;
-            objForm[objCount++] = new JLabel("To Char #");
-            objForm[objCount++] = jcmbEndChar;
-        }
-        if (type == TYPE_BASIC) {
-            objForm[objCount++] = new JLabel("Code Line Number Start");
-            objForm[objCount++] = jtxtCodeLineStart;
-            objForm[objCount++] = new JLabel("Character Data Line Number Start");
-            objForm[objCount++] = jtxtCharLineStart;
-            objForm[objCount++] = new JLabel("Map Data Line Number Start");
-            objForm[objCount++] = jtxtMapLineStart;
-            objForm[objCount++] = new JLabel("Line Number Interval");
-            objForm[objCount++] = jtxtLineInterval;
-            objForm[objCount++] = jchkExcludeBlank;
-        }
-        if (type == TYPE_BINARY) {
-            objForm[objCount++] = jchkIncludeColorsets;
-            objForm[objCount++] = jchkIncludeChardata;
-            objForm[objCount++] = jchkIncludeSpritedata;
-        }
-        if (type == TYPE_XBSCRMER) {
-            objForm[objCount++] = new JLabel("Code Line Number Start (0-32710)");
-            objForm[objCount++] = jtxtCodeLineStart;
-            objForm[objCount++] = new JLabel("Display width (28 or 32)");
-            objForm[objCount++] = jtxtCharLineStart;
-        }
-        if (type == TYPE_ASM) {
-            objForm[objCount++] = new JLabel("Map Compression");
-            objForm[objCount++] = compressComboBox;
-        }
-        if (type == TYPE_SCROLL) {
-            objForm[objCount++] = orientationRadioButtonPanel;
-            objForm[objCount++] = jchkWrap;
-            objForm[objCount++] = new JLabel("Map Compression");
-            objForm[objCount++] = compressComboBox;
-            objForm[objCount++] = new JLabel("Generate Scrolled Character Frames");
-            objForm[objCount++] = frameComboBox;
-        }
-        if (type != TYPE_XBSCRMER) {
-            objForm[objCount++] = jchkCurrentMapOnly;
-        }
-        if (type == TYPE_BASIC || type == TYPE_ASM || type == TYPE_SCROLL) {
-            objForm[objCount++] = jchkIncludeComments;
-        }
-        if (type == TYPE_ASM || type == TYPE_SCROLL) {
-            objForm[objCount++] = jchkIncludeCharNumbers;
-        }
-        if (type == TYPE_ASM || type == TYPE_BINARY) {
-            objForm[objCount++] = jchkIncludeSpritedata;
-            objForm[objCount++] = new JLabel("From Sprite #");
-            objForm[objCount++] = jcmbStartSprite;
-            objForm[objCount++] = new JLabel("To Sprite #");
-            objForm[objCount++] = jcmbEndSprite;
+        List<Object> objForm = new ArrayList<>();
+        switch (type) {
+            case TYPE_BASIC:
+                objForm.add(new JLabel("From Char #"));
+                objForm.add(jcmbStartChar);
+                objForm.add(new JLabel("To Char #"));
+                objForm.add(jcmbEndChar);
+                objForm.add(new JLabel("Code Line Number Start"));
+                objForm.add(jtxtCodeLineStart);
+                objForm.add(new JLabel("Character Data Line Number Start"));
+                objForm.add(jtxtCharLineStart);
+                objForm.add(new JLabel("Map Data Line Number Start"));
+                objForm.add(jtxtMapLineStart);
+                objForm.add(new JLabel("Line Number Interval"));
+                objForm.add(jtxtLineInterval);
+                objForm.add(jchkExcludeBlank);
+                objForm.add(jchkCurrentMapOnly);
+                objForm.add(jchkIncludeComments);
+                break;
+            case TYPE_ASM:
+                objForm.add(jchkIncludeMapData);
+                objForm.add(jchkCurrentMapOnly);
+                objForm.add(new JLabel("Map Compression"));
+                objForm.add(compressComboBox);
+                objForm.add(jchkIncludeCharData);
+                objForm.add(new JLabel("From Char #"));
+                objForm.add(jcmbStartChar);
+                objForm.add(new JLabel("To Char #"));
+                objForm.add(jcmbEndChar);
+                objForm.add(jchkIncludeCharNumbers);
+                objForm.add(jchkIncludeSpriteData);
+                objForm.add(new JLabel("From Sprite #"));
+                objForm.add(jcmbStartSprite);
+                objForm.add(new JLabel("To Sprite #"));
+                objForm.add(jcmbEndSprite);
+                objForm.add(jchkIncludeColorData);
+                objForm.add(jchkIncludeComments);
+                break;
+            case TYPE_BINARY:
+                objForm.add(jchkCurrentMapOnly);
+                objForm.add(jchkIncludeCharData);
+                objForm.add(new JLabel("From Char #"));
+                objForm.add(jcmbStartChar);
+                objForm.add(new JLabel("To Char #"));
+                objForm.add(jcmbEndChar);
+                objForm.add(jchkIncludeSpriteData);
+                objForm.add(new JLabel("From Sprite #"));
+                objForm.add(jcmbStartSprite);
+                objForm.add(new JLabel("To Sprite #"));
+                objForm.add(jcmbEndSprite);
+                objForm.add(jchkIncludeColorData);
+                break;
+            case TYPE_XBSCRMER:
+                objForm.add(new JLabel("Code Line Number Start (0-32710)"));
+                objForm.add(jtxtCodeLineStart);
+                objForm.add(new JLabel("Display width (28 or 32)"));
+                objForm.add(jtxtCharLineStart);
+                break;
+            case TYPE_SCROLL:
+                objForm.add(new JLabel("Transition Type"));
+                objForm.add(transitionTypeComboBox);
+                objForm.add(jchkWrap);
+                objForm.add(jchkCurrentMapOnly);
+                objForm.add(new JLabel("Map Compression"));
+                objForm.add(compressComboBox);
+                objForm.add(new JLabel("Generate Scrolled Character Frames"));
+                objForm.add(frameComboBox);
+                objForm.add(jchkIncludeCharNumbers);
+                objForm.add(jchkIncludeComments);
+                break;
         }
 
         Object[] objButtons = {OK_TEXT, CANCEL_TEXT};
 
-        JOptionPane joptMain = new JOptionPane(objForm, JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION, null, objButtons, objButtons[0]);
+        JOptionPane joptMain = new JOptionPane(objForm.toArray(), JOptionPane.QUESTION_MESSAGE, JOptionPane.OK_CANCEL_OPTION, null, objButtons, objButtons[0]);
         joptMain.addPropertyChangeListener(this);
         this.setContentPane(joptMain);
 
@@ -265,16 +286,20 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
         return Integer.parseInt(jtxtLineInterval.getText());
     }
 
-    public boolean includeColorsets() {
-        return jchkIncludeColorsets.isSelected();
+    public boolean includeColorData() {
+        return jchkIncludeColorData.isSelected();
     }
 
-    public boolean includeChardata() {
-        return jchkIncludeChardata.isSelected();
+    public boolean includeMapData() {
+        return jchkIncludeMapData.isSelected();
     }
 
-    public boolean includeSpritedata() {
-        return jchkIncludeSpritedata.isSelected();
+    public boolean includeCharData() {
+        return jchkIncludeCharData.isSelected();
+    }
+
+    public boolean includeSpriteData() {
+        return jchkIncludeSpriteData.isSelected();
     }
 
     public boolean includeComments() {
@@ -293,8 +318,8 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
         return jchkExcludeBlank.isSelected();
     }
 
-    public int getScrollOrientation() {
-        return verticalButton.isSelected() ? Magellan.SCROLL_ORIENTATION_VERTICAL : (horizontalButton.isSelected() ? Magellan.SCROLL_ORIENTATION_HORIZONTAL : Magellan.SCROLL_ORIENTATION_ISOMETRIC);
+    public TransitionType getScrollOrientation() {
+        return (TransitionType) transitionTypeComboBox.getSelectedItem();
     }
 
     public boolean isWrap() {
@@ -333,15 +358,27 @@ public class MagellanExportDialog extends JDialog implements PropertyChangeListe
     }
 
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == verticalButton) {
-            frameComboBox.addItem("2-character Strips");
+        if (e.getSource() == transitionTypeComboBox) {
+            TransitionType transitionType = (TransitionType) transitionTypeComboBox.getSelectedItem();
+            if (transitionType == TransitionType.BOTTOM_TO_TOP) {
+                frameComboBox.addItem("2-character Strips");
+            }
+            else if (transitionType == TransitionType.LEFT_TO_RIGHT) {
+                frameComboBox.removeItemAt(4);
+            }
         }
-        else if (e.getSource() == horizontalButton) {
-            frameComboBox.removeItemAt(4);
+        else if (e.getSource() == jchkIncludeMapData) {
+            compressComboBox.setEnabled(jchkIncludeMapData.isSelected());
+            jchkCurrentMapOnly.setEnabled(jchkIncludeMapData.isSelected());
         }
-        else if (e.getSource() == jchkIncludeSpritedata) {
-            jcmbStartSprite.setEnabled(jchkIncludeSpritedata.isSelected());
-            jcmbEndSprite.setEnabled(jchkIncludeSpritedata.isSelected());
+        else if (e.getSource() == jchkIncludeCharData) {
+            jcmbStartChar.setEnabled(jchkIncludeCharData.isSelected());
+            jcmbEndChar.setEnabled(jchkIncludeCharData.isSelected());
+            jchkIncludeCharNumbers.setEnabled(jchkIncludeCharData.isSelected());
+        }
+        else if (e.getSource() == jchkIncludeSpriteData) {
+            jcmbStartSprite.setEnabled(jchkIncludeSpriteData.isSelected());
+            jcmbEndSprite.setEnabled(jchkIncludeSpriteData.isSelected());
         }
     }
 }
